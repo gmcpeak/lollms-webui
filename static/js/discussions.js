@@ -221,8 +221,9 @@ function populate_menu(){
   const actionBtns = document.querySelector('#action-buttons');
   actionBtns.appendChild(exportDiscussionButton);
 
-  const newDiscussionBtn = document.querySelector('#new-discussion-btn');
-  newDiscussionBtn.title = "Create new discussion";
+  // Removing button for creating a new discussion
+  // const newDiscussionBtn = document.querySelector('#new-discussion-btn');
+  // newDiscussionBtn.title = "Create new discussion";
   const resetDBButton = document.querySelector('#reset-discussions-btn');
   resetDBButton.title = "Reset all discussions/database";
   resetDBButton.addEventListener('click', () => {

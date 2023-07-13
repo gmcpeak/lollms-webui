@@ -41,6 +41,8 @@ from flask import (
     stream_with_context,
     send_from_directory
 )
+from tkinter import Tk
+from tkinter.filedialog import askopenfilename
 
 from flask_socketio import SocketIO, emit
 from pathlib import Path
@@ -491,6 +493,12 @@ class LoLLMsWebUI(LoLLMsAPPI):
         elif setting_name== "language":
             self.config["language"]=data['setting_value']
 
+        elif setting_name== "personality_language":
+            self.personality_language=data['setting_value']
+                
+        elif setting_name== "personality_category":
+            self.personality_category=data['setting_value']
+
         elif setting_name== "personality_folder":
             self.personality_name=data['setting_value']
             if len(self.config["personalities"])>0:
@@ -838,9 +846,6 @@ class LoLLMsWebUI(LoLLMsAPPI):
                         })         
 
     def install_model_from_path(self):
-        from tkinter import Tk
-        from tkinter.filedialog import askopenfilename
-        
         ASCIIColors.info(f"- Selecting model ...")
         # Define the file types
         filetypes = [

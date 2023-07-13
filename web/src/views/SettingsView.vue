@@ -66,9 +66,7 @@
                 <div class="flex flex-row p-3">
                     <button @click.stop="sc_collapsed = !sc_collapsed"
                         class="text-2xl hover:text-primary  p-2 -m-2 w-full text-left flex flex-row items-center ">
-                        <div v-show="sc_collapsed" ><i data-feather='chevron-right'></i></div>
-                        <div v-show="!sc_collapsed" ><i data-feather='chevron-down'></i></div>
-
+                        <i data-feather="chevron-right" class="mr-2  flex-shrink-0"></i>
 
                         <h3 class="text-lg font-semibold cursor-pointer select-none mr-2">
                             System status</h3>
@@ -215,7 +213,7 @@
                                                     id="path1182" />
                                             </svg>
                                             <h3 class="font-bold font-large text-lg">
-                                                <div>{{ computedFileSize(item.used_vram) }} / {{ computedFileSize(item.total_vram) }} ({{ item.percentage }}%)
+                                                <div>{{ item.used_vram }} / {{ item.total_vram }} ({{ item.percentage }}%)
                                                 </div>
                                             </h3>
                                         </div>
@@ -497,8 +495,8 @@
                         </label>
                         <div class="flex flex-col mx-2">
                             <div><b>Model:&nbsp;</b>{{ item.gpu_model }}</div>
-                            <div><b>Avaliable vram:&nbsp;</b>{{  this.computedFileSize(item.available_space) }}</div>
-                            <div><b>GPU usage:&nbsp;</b> {{ this.computedFileSize(item.used_vram) }} / {{ this.computedFileSize(item.total_vram) }} ({{ item.percentage
+                            <div><b>Avaliable vram:&nbsp;</b>{{ item.available_space }}</div>
+                            <div><b>GPU usage:&nbsp;</b> {{ item.used_vram }} / {{ item.total_vram }} ({{ item.percentage
                             }}%)</div>
                         </div>
                         <div class="p-2 ">
@@ -520,8 +518,7 @@
                 <div class="flex flex-row p-3">
                     <button @click.stop="bzc_collapsed = !bzc_collapsed"
                         class="text-2xl hover:text-primary p-2 -m-2 w-full text-left flex flex-row items-center">
-                        <div v-show="bzc_collapsed" ><i data-feather='chevron-right'></i></div>
-                        <div v-show="!bzc_collapsed" ><i data-feather='chevron-down'></i></div>
+                        <i data-feather="chevron-right" class="mr-2 flex-shrink-0"></i>
 
                         <h3 class="text-lg font-semibold cursor-pointer select-none mr-2">
                             Binding zoo</h3>
@@ -547,14 +544,14 @@
                 </div>
                 <div :class="{ 'hidden': bzc_collapsed }" class="flex flex-col mb-2 px-3 pb-0">
 
-                    <div v-if="bindingsArr.length > 0" class="mb-2">
+                    <div v-if="bindings.length > 0" class="mb-2">
                         <label for="binding" class="block ml-2 mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                            Bindings: ({{ bindingsArr.length }})
+                            Bindings: ({{ bindings.length }})
                         </label>
                         <div class="overflow-y-auto no-scrollbar p-2 pb-0 grid lg:grid-cols-3 md:grid-cols-2 gap-4"
                             :class="bzl_collapsed ? '' : 'max-h-96'">
                             <TransitionGroup name="list">
-                                <BindingEntry ref="bindingZoo" v-for="(binding, index) in bindingsArr"
+                                <BindingEntry ref="bindingZoo" v-for="(binding, index) in bindings"
                                     :key="'index-' + index + '-' + binding.folder" :binding="binding"
                                     :on-selected="onSelectedBinding" :on-reinstall="onReinstallBinding"
                                     :on-install="onInstallBinding" :on-settings="onSettingsBinding"
@@ -586,9 +583,7 @@
                 <div class="flex flex-row p-3">
                     <button @click.stop="mzc_collapsed = !mzc_collapsed"
                         class="text-2xl hover:text-primary  p-2 -m-2 w-full text-left flex items-center">
-                        <div v-show="mzc_collapsed" ><i data-feather='chevron-right'></i></div>
-                        <div v-show="!mzc_collapsed" ><i data-feather='chevron-down'></i></div>
-
+                        <i :data-feather="mzc_collapsed ? 'chevron-right' : 'chevron-down'" class="mr-2 flex-shrink-0"></i>
                         <h3 class="text-lg font-semibold cursor-pointer select-none mr-2">
                             Models zoo</h3>
                         <div class="flex flex-row items-center">
@@ -612,7 +607,7 @@
                                 <div class="flex gap-1 items-center">
                                     <img :src="imgModel" class="w-8 h-8 rounded-lg object-fill">
                                     <h3 class="font-bold font-large text-lg line-clamp-1">
-                                        {{ model_name }}
+                                        {{ configFile.model_name }}
                                     </h3>
                                 </div>
                             </div>
@@ -735,11 +730,10 @@
                 <div class="flex flex-row p-3">
                     <button @click.stop="mzdc_collapsed = !mzdc_collapsed"
                         class="text-2xl hover:text-primary  p-2 -m-2 w-full text-left flex items-center">
-                        <div v-show="mzdc_collapsed" ><i data-feather='chevron-right'></i></div>
-                        <div v-show="!mzdc_collapsed" ><i data-feather='chevron-down'></i></div>
+                        <i :data-feather="mzdc_collapsed ? 'chevron-right' : 'chevron-down'" class="mr-2 flex-shrink-0"></i>
                         <h3 class="text-lg font-semibold cursor-pointer select-none mr-2">
                             Add models for binding</h3>
-                        <div v-if="!binding_name" class="text-base text-red-600 flex gap-3 items-center mr-2">
+                        <div v-if="!configFile.binding_name" class="text-base text-red-600 flex gap-3 items-center mr-2">
                             <i data-feather="alert-triangle" class="flex-shrink-0"></i>
                             No binding selected!
                         </div>
@@ -878,8 +872,7 @@
                 <div class="flex flex-row p-3 items-center">
                     <button @click.stop="pzc_collapsed = !pzc_collapsed"
                         class="text-2xl hover:text-primary  p-2 -m-2 text-left w-full  flex items-center">
-                        <div v-show="pzc_collapsed" ><i data-feather='chevron-right'></i></div>
-                        <div v-show="!pzc_collapsed" ><i data-feather='chevron-down'></i></div>
+                        <i :data-feather="pzc_collapsed ? 'chevron-right' : 'chevron-down'" class="mr-2 flex-shrink-0 "></i>
                         <h3 class="text-lg font-semibold cursor-pointer select-none mr-2">
                             Personalities zoo</h3>
 
@@ -888,6 +881,7 @@
                         <!-- LIST OF MOUNTED PERSONALITIES -->
                         <div class="mr-2 font-bold font-large text-lg line-clamp-1">
                             {{ active_pesonality }}
+
                         </div>
                         <div v-if="configFile.personalities" class="mr-2">|</div>
                         <div v-if="configFile.personalities"
@@ -982,7 +976,7 @@
                         <label for="persLang" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
                             Personalities Languages: ({{ persLangArr.length }})
                         </label>
-                        <select id="persLang" @change="update_personality_language($event.target.value, refresh)"
+                        <select id="persLang" @change="update_setting('personality_language', $event.target.value, refresh)"
                             class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
 
                             <option v-for="item in persLangArr" :selected="item === this.configFile.personality_language">{{
@@ -997,7 +991,7 @@
                         <label for="persCat" class="block  mb-2 text-sm font-medium text-gray-900 dark:text-white">
                             Personalities Category: ({{ persCatgArr.length }})
                         </label>
-                        <select id="persCat" @change="update_personality_category($event.target.value, refresh)"
+                        <select id="persCat" @change="update_setting('personality_category', $event.target.value, refresh)"
                             class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
 
                             <option v-for="(item, index) in persCatgArr" :key="index"
@@ -1010,6 +1004,8 @@
                         </select>
                     </div>
                     <div>
+
+
                         <div v-if="personalitiesFiltered.length > 0" class="mb-2">
                             <label for="model" class="block ml-2 mb-2 text-sm font-medium text-gray-900 dark:text-white">
                                 {{ searchPersonality ? 'Search results' : 'Personalities' }}: ({{
@@ -1051,8 +1047,7 @@
                 <div class="flex flex-row">
                     <button @click.stop="mc_collapsed = !mc_collapsed"
                         class="text-2xl hover:text-primary  p-2 -m-2 w-full text-left flex items-center">
-                        <div v-show="mc_collapsed" ><i data-feather='chevron-right'></i></div>
-                        <div v-show="!mc_collapsed" ><i data-feather='chevron-down'></i></div>
+                        <i :data-feather="mc_collapsed ? 'chevron-right' : 'chevron-down'" class="mr-2"></i>
                         <h3 class="text-lg font-semibold cursor-pointer select-none">
                             Model Configuration</h3>
                     </button>
@@ -1299,8 +1294,6 @@ import socket from '@/services/websocket.js'
 import defaultModelImgPlaceholder from "../assets/default_model.png"
 
 import defaultPersonalityImgPlaceholder from "../assets/logo.svg"
-import defaultImgPlaceholder from "../assets/default_model.png"
-
 import AddModelDialog from "@/components/AddModelDialog.vue";
 import UniversalForm from '../components/UniversalForm.vue';
 const bUrl = import.meta.env.VITE_GPT4ALL_API_BASEURL
@@ -1321,16 +1314,15 @@ export default {
     data() {
 
         return {
-            // Current personality language
-            personality_language:null,
-            // Current personality category
-            personality_category:null,
             // install custom model
             addModelDialogVisibility: false,
             modelPath: '',
             // Zoo stuff
+            models: [],
+            personalities: [],
             personalitiesFiltered: [],
             modelsFiltered: [],
+            bindings: [],
             // Accordeon stuff 
             collapsedArr: [],
             all_collapsed: true,
@@ -1347,15 +1339,22 @@ export default {
             pzl_collapsed: false,
             bzl_collapsed: false,
             // Settings stuff
+            bindingsArr: [],
+            modelsArr: [], // not used anymore but still have references in some methods
             persLangArr: [],
             persCatgArr: [],
             persArr: [],
             langArr: [],
+            configFile: {},
             showConfirmation: false,
             showToast: false,
             isLoading: false,
             settingsChanged: false,
             isModelSelected: false,
+            diskUsage: {},
+            ramUsage: {},
+            vramUsage: {},
+            mountedPersArr: [],
             isMounted: false, // Needed to wait for $refs to be rendered
             bUrl: bUrl, // for personality images
             searchPersonality: "",
@@ -1380,20 +1379,29 @@ export default {
             this.isLoading = true
             nextTick(() => {
                 feather.replace()
-            })
-            while (this.$store.state.ready === false) {
-                await new Promise((resolve) => setTimeout(resolve, 100)); // Wait for 100ms
-            }  
 
+            })
+
+            this.configFile = await this.api_get_req("get_config")
+            let personality_path_infos = await this.api_get_req("get_current_personality_path_infos")
+            this.configFile.personality_language = personality_path_infos["personality_language"]
+            this.configFile.personality_category = personality_path_infos["personality_category"]
+            this.configFile.personality_folder = personality_path_infos["personality_name"]
 
 
             if (this.configFile.model_name) {
                 this.isModelSelected = true
             }
+
+            this.fetchModels();
+
+            this.bindingsArr = await this.api_get_req("list_bindings")
+            this.modelsArr = await this.api_get_req("list_models")
             this.persLangArr = await this.api_get_req("list_personalities_languages")
             this.persCatgArr = await this.api_get_req("list_personalities_categories")
             this.persArr = await this.api_get_req("list_personalities")
             this.langArr = await this.api_get_req("list_languages")
+
 
             this.bindingsArr.sort((a, b) => a.name.localeCompare(b.name))
             this.modelsArr.sort()
@@ -1403,17 +1411,16 @@ export default {
             this.langArr.sort()
 
 
-            //await this.getPersonalitiesArr()
-            this.personality_language = this.configFile.personality_language
-            this.personality_category = this.configFile.personality_category
-            this.personalitiesFiltered = this.personalities.filter((item) => item.category === this.configFile.personality_category && item.language === this.configFile.personality_language)
-            this.personalitiesFiltered.sort()
-            //mountedPersArr
-            this.modelsFiltered = this.models
+            await this.getPersonalitiesArr()
 
-            //this.bindings = await this.api_get_req("list_bindings")
-            this.bindingsArr.sort((a, b) => a.name.localeCompare(b.name))
+
+            this.bindings = await this.api_get_req("list_bindings")
+            this.bindings.sort((a, b) => a.name.localeCompare(b.name))
             this.isLoading = false
+            this.diskUsage = await this.api_get_req("disk_usage")
+            this.ramUsage = await this.api_get_req("ram_usage")
+            this.vramUsage = await this.getVramUsage()
+            this.getMountedPersonalities()
             this.isMounted = true
 
 
@@ -1426,6 +1433,60 @@ export default {
         },        
         async getVramUsage() {
             const resp = await this.api_get_req("vram_usage")
+            // {
+            //   "gpu_0_total_vram": 11811160064,
+            //   "gpu_0_used_vram": 3177185280,
+            //   "nb_gpus": 1
+            // }
+
+            const gpuArr = []
+
+            if (resp.nb_gpus > 0) {
+                // Get keys
+                const keys = Object.keys(resp)
+                // for each gpu
+                for (let i = 0; i < resp.nb_gpus; i++) {
+
+
+
+
+                    const total_vram = resp[`gpu_${i}_total_vram`];
+                    const used_vram = resp[`gpu_${i}_used_vram`];
+                    const model = resp[`gpu_${i}_model`];
+                    const percentage = (used_vram / total_vram) * 100
+                    const available_space = total_vram - used_vram
+
+
+
+                    gpuArr.push({
+                        total_vram: this.computedFileSize(total_vram),
+                        used_vram: this.computedFileSize(used_vram),
+                        gpu_index: i,
+                        gpu_model: model,
+                        percentage: percentage.toFixed(2),
+                        available_space: this.computedFileSize(available_space)
+                    });
+
+                }
+                const result = {
+
+                    "nb_gpus": resp.nb_gpus,
+                    "gpus": gpuArr
+                }
+                //console.log('gpu usage: ',result)
+                return result
+
+            }
+            else{
+                const result = {
+                "nb_gpus": 0,
+                "gpus": []
+                }
+                //console.log('gpu usage: ',result)
+                return result
+
+            }
+
 
 
         },
@@ -1480,7 +1541,9 @@ export default {
 
 
                 this.$refs.toast.showToast("Model:\n" + model_object.title + "\ninstalled!", 4, true)
-                this.$store.dispatch('refreshDiskUsage');
+                this.api_get_req("disk_usage").then(response => {
+                    this.diskUsage = response
+                })
             } else if (response.status === 'failed') {
 
                 console.log("Install failed")
@@ -1498,7 +1561,9 @@ export default {
                     }
                     console.error('Installation failed:', response.error);
                     this.$refs.toast.showToast("Model:\n" + model_object.title + "\nfailed to install!", 4, false)
-                    this.$store.dispatch('refreshDiskUsage');
+                    this.api_get_req("disk_usage").then(response => {
+                        this.diskUsage = response
+                    })
                 }
             }
         },
@@ -1532,6 +1597,80 @@ export default {
             this.mzdc_collapsed = val
 
         },
+        fetchBindings() {
+            this.api_get_req("list_bindings")
+            then(response => {
+                this.bindings = response
+                this.bindings.sort((a, b) => a.name.localeCompare(b.name))
+            })
+        },
+        fetchMainConfig(){
+            this.api_get_req("get_config").then(response => {
+                this.getPersonalitiesArr().then(() => {
+                    this.getMountedPersonalities()
+                })
+
+                console.log("Received config")
+                this.configFile = response
+
+
+            }).then(() => {
+                this.api_get_req("get_current_personality_path_infos").then(response => {
+                    this.configFile.personality_language = response["personality_language"]
+                    this.configFile.personality_category = response["personality_category"]
+                    this.configFile.personality_folder = response["personality_name"]
+                    console.log("received infos")
+                });
+            })
+        },
+
+        fetchModels() {
+            this.api_get_req("get_available_models")
+            axios.get('/get_available_models')
+                .then(response => {
+
+                    this.models = response.data;
+                    this.models.sort((a, b) => a.title.localeCompare(b.title))
+                    this.fetchCustomModels()
+                    this.models.forEach(model => {
+                        if (model.title == this.configFile["model_name"]) {
+                            model.selected = true;
+                        }
+                        else {
+                            model.selected = false;
+                        }
+                    });
+
+                })
+                .catch(error => {
+                    console.log(error.message, 'fetchModels');
+                });
+        },
+        fetchCustomModels() {
+
+            axios.get('/list_models')
+                .then(response => {
+                    // Returns array of model filenames which are = to title of models zoo entry
+                    for (let i = 0; i < response.data.length; i++) {
+                        const customModel = response.data[i]
+                        const index = this.models.findIndex(x => x.title == customModel)
+
+                        if (index == -1) {
+                            let newModelEntry = {}
+                            newModelEntry.title = customModel
+                            newModelEntry.path = customModel
+                            newModelEntry.isCustomModel = true
+                            newModelEntry.isInstalled = true
+                            this.models.push(newModelEntry)
+                        }
+                    }
+
+
+                })
+                .catch(error => {
+                    console.log(error.message, 'fetchCustomModels');
+                });
+        },
         fetchPersonalities(){
             this.api_get_req("list_personalities_categories").then(response => {
                 this.persCatgArr = response
@@ -1545,8 +1684,13 @@ export default {
             })
         },
         fetchHardwareInfos(){
-            this.$store.dispatch('refreshDiskUsage');
-            this.$store.dispatch('refreshRamUsage');
+            this.api_get_req("disk_usage").then(response => {
+                this.diskUsage = response
+            })
+
+            this.api_get_req("ram_usage").then(response => {
+                this.ramUsage = response
+            })
         },
         async onPersonalitySelected(pers) {
             console.log('on pers', pers)
@@ -1604,13 +1748,11 @@ export default {
                 if (model_object.isInstalled) {
 
                     if (this.configFile.model_name != model_object.title) {
-                        this.update_model(model_object.title).then((res)=>{
-                            console.log("update_model",res)
-                            this.configFile.model_name = model_object.title
-                            this.$refs.toast.showToast("Selected model:\n" + model_object.title, 4, true)
-                            this.settingsChanged = true
-                            this.isModelSelected = true
-                        });
+                        this.update_model(model_object.title)
+                        this.configFile.model_name = model_object.title
+                        this.$refs.toast.showToast("Selected model:\n" + model_object.title, 4, true)
+                        this.settingsChanged = true
+                        this.isModelSelected = true
                     }
 
                 } else {
@@ -1692,7 +1834,9 @@ export default {
                         // Update the isInstalled property of the corresponding model
 
                         this.$refs.toast.showToast("Model:\n" + model_object.title + "\ninstalled!", 4, true)
-                        this.$store.dispatch('refreshDiskUsage');
+                        this.api_get_req("disk_usage").then(response => {
+                            this.diskUsage = response
+                        })
                     }
                 } else {
                     socket.off('install_progress', progressListener);
@@ -1703,7 +1847,9 @@ export default {
                     this.showProgress = false;
                     console.error('Installation failed:', response.error);
                     this.$refs.toast.showToast("Model:\n" + model_object.title + "\nfailed to install!", 4, false)
-                    this.$store.dispatch('refreshDiskUsage');
+                    this.api_get_req("disk_usage").then(response => {
+                        this.diskUsage = response
+                    })
                 }
             };
 
@@ -1751,7 +1897,9 @@ export default {
                         // Update the isInstalled property of the corresponding model
                         this.addModel = {}
                         this.$refs.toast.showToast("Model:\n" + this.addModel.model_name + "\ninstalled!", 4, true)
-                        this.$store.dispatch('refreshDiskUsage');
+                        this.api_get_req("disk_usage").then(response => {
+                            this.diskUsage = response
+                        })
                     }
                 } else {
                     socket.off('install_progress', progressListener);
@@ -1762,7 +1910,9 @@ export default {
 
                     console.error('Installation failed:', response.error);
                     this.$refs.toast.showToast("Model:\n" + this.addModel.model_name + "\nfailed to install!", 4, false)
-                    this.$store.dispatch('refreshDiskUsage');
+                    this.api_get_req("disk_usage").then(response => {
+                        this.diskUsage = response
+                    })
                 }
             };
 
@@ -1809,7 +1959,9 @@ export default {
                         // Update the isInstalled property of the corresponding model
                         this.addModel = {}
                         this.$refs.toast.showToast("Model:\n" + this.addModel.model_name + "\ninstalled!", 4, true)
-                        this.$store.dispatch('refreshDiskUsage');
+                        this.api_get_req("disk_usage").then(response => {
+                            this.diskUsage = response
+                        })
                     }
                 } else {
                     socket.off('progress', progressListener);
@@ -1820,7 +1972,9 @@ export default {
 
                     console.error('Installation failed:', response.error);
                     this.$refs.toast.showToast("Model:\n" + this.addModel.model_name + "\nfailed to install!", 4, false)
-                    this.$store.dispatch('refreshDiskUsage');
+                    this.api_get_req("disk_usage").then(response => {
+                        this.diskUsage = response
+                    })
                 }
             };
 
@@ -1857,7 +2011,9 @@ export default {
                                 this.models = this.models.filter((model) => model.title !== model_object.title)
                             }
                             this.$refs.toast.showToast("Model:\n" + model_object.title + "\nwas uninstalled!", 4, true)
-                            this.$store.dispatch('refreshDiskUsage');
+                            this.api_get_req("disk_usage").then(response => {
+                                this.diskUsage = response
+                            })
                         } else {
                             console.log("uninstalling failed", response)
                             // Installation failed or encountered an error
@@ -1867,7 +2023,9 @@ export default {
                             // eslint-disable-next-line no-undef
                             console.error('Uninstallation failed:', message.error);
                             this.$refs.toast.showToast("Model:\n" + model_object.title + "\nfailed to uninstall!", 4, false)
-                            this.$store.dispatch('refreshDiskUsage');
+                            this.api_get_req("disk_usage").then(response => {
+                                this.diskUsage = response
+                            })
                         }
                     };
 
@@ -1880,7 +2038,6 @@ export default {
             })
         },
         onSelectedBinding(binding_object) {
-            console.log("Binding selected")
             if (!binding_object.binding.installed) {
                 this.$refs.toast.showToast("Binding is not installed:\n" + binding_object.binding.name, 4, false)
                 return
@@ -1894,6 +2051,8 @@ export default {
                 //     return
                 // }
                 this.update_binding(binding_object.binding.folder)
+                this.fetchModels();
+                //console.log('lol',binding_object)
             }
         },
         onInstallBinding(binding_object) {
@@ -2038,88 +2197,71 @@ export default {
         onMessageBoxOk() {
             console.log("OK button clicked");
         },
-        update_personality_language(lang, next){
-            this.personality_language = lang
-            next()
-        },
-
-        update_personality_category(cat, next){
-            this.personality_category = cat
-            next()
-        },
         // Refresh stuff
         refresh() {
-            console.log("Refreshing")
-            this.$store.dispatch('refreshConfig').then(() => {
-                console.log(this.personality_language)
-                console.log(this.personality_category)
-                this.personalitiesFiltered = this.personalities.filter((item) => item.category === this.personality_category && item.language === this.personality_language)
-                this.personalitiesFiltered.sort()
-            });
-            
-            //this.fetchMainConfig();
-            //this.fetchBindings();
-            //this.fetchModels();
-            //this.fetchPersonalities();
-            //this.fetchHardwareInfos();
+
+            this.fetchMainConfig();
+            this.fetchBindings();
+            this.fetchModels();
+            this.fetchPersonalities();
+            this.fetchHardwareInfos();
 
         },
         // Accordeon stuff
         toggleAccordion() {
             this.showAccordion = !this.showAccordion;
         },
-        async update_setting(setting_name_val, setting_value_val, next) {
+        update_setting(setting_name_val, setting_value_val, next) {
             this.isLoading = true
             const obj = {
                 setting_name: setting_name_val,
                 setting_value: setting_value_val
             }
 
-            let res = await axios.post('/update_setting', obj)
+            axios.post('/update_setting', obj).then((res) => {
 
-            if (res) {
-                this.isLoading = false
-                console.log('update_setting', res)
-                if (next !== undefined) {
+                if (res) {
+                    this.isLoading = false
+                    console.log('update_setting', res)
+                    if (next !== undefined) {
 
-                    next(res)
+                        next(res)
+                    }
+                    return res.data;
                 }
-                return res.data;
-            }
-            this.isLoading = false
+                this.isLoading = false
+            })
+                // eslint-disable-next-line no-unused-vars
 
+                .catch(error => {
+                    this.isLoading = false
+                    return { 'status': false }
+                });
         },
         update_binding(value) {
 
             // eslint-disable-next-line no-unused-vars
             this.isLoading = true
-            console.log("updating binding_name")
-            this.update_setting('binding_name', value, (res) => {
-                console.log("updated binding_name")
 
-                const index = this.bindingsArr.findIndex(item => item.folder == value)
-                const item = this.bindingsArr[index]
+            this.update_setting('binding_name', value, (res) => {
+
+                const index = this.bindings.findIndex(item => item.folder == value)
+                const item = this.bindings[index]
                 if (item) {
                     item.installed = true
                 }
 
+                this.$refs.toast.showToast("Binding changed.", 4, true)
                 this.settingsChanged = true
                 this.isLoading = false
 
-                console.log("updating model")
                 // If binding changes then reset model
-                this.update_model(null).then(()=>{
-                    console.log("updated model")
-                    this.configFile.model_name = null
-                    this.$store.dispatch('refreshConfig');
-                    this.$store.dispatch('refreshModelsZoo');
-                    this.$refs.toast.showToast("Binding changed.", 4, true)
-                    this.$forceUpdate();
-                });
-                //this.fetchMainConfig();
-                //this.fetchBindings();
-                //this.fetchModels();
+                this.update_model(null)
+                this.configFile.model_name = null
 
+                this.fetchMainConfig();
+                this.fetchBindings();
+                this.fetchModels();
                 nextTick(() => {
                     feather.replace()
 
@@ -2127,14 +2269,15 @@ export default {
             })
 
         },
-        async update_model(value) {
-            console.log("hjsdfhksdjufkdshf")
+        update_model(value) {
             if (!value) this.isModelSelected = false
             // eslint-disable-next-line no-unused-vars
             this.isLoading = true
-            let res = await this.update_setting('model_name', value)
-            this.isLoading = false
-            return res
+            this.update_setting('model_name', value, (res) => {
+
+                //this.fetchModels();
+                this.isLoading = false
+            })
         },
         applyConfiguration() {
 
@@ -2228,7 +2371,7 @@ export default {
             this.isLoading = true
             this.personalities = []
             const dictionary = await this.api_get_req("get_all_personalities")
-            const config = this.$store.config
+            const config = await this.api_get_req("get_config")
             //console.log('asdas',config)
             // console.log("all_personalities")
             // console.log(dictionary)
@@ -2303,7 +2446,6 @@ export default {
         },
         async filterModels() {
             if (!this.searchModel) {
-                console.log("Searching model")
                 this.modelsFiltered = this.models
                 this.modelsFiltered.sort()
                 this.searchModelInProgress = false
@@ -2397,12 +2539,11 @@ export default {
                 const res = await axios.post('/select_personality', obj);
 
                 if (res) {
-
-                    this.$store.dispatch('refreshConfig').then(() => {
-                        this.$store.dispatch('refreshPersonalitiesArr').then(() => {
-                        this.$store.dispatch('refreshMountedPersonalities');                
-                        });
-                    });
+                    this.configFile = await this.api_get_req("get_config")
+                    let personality_path_infos = await this.api_get_req("get_current_personality_path_infos")
+                    this.configFile.personality_language = personality_path_infos["personality_language"]
+                    this.configFile.personality_category = personality_path_infos["personality_category"]
+                    this.configFile.personality_folder = personality_path_infos["personality_name"]
                     return res.data
 
                 }
@@ -2437,7 +2578,7 @@ export default {
                     this.$refs.toast.showToast("Selected personality:\n" + pers.personality.name, 4, true)
 
                 }
-                this.$store.dispatch('refreshMountedPersonalities');
+                this.getMountedPersonalities()
             } else {
                 pers.isMounted = false
                 this.$refs.toast.showToast("Could not mount personality\nError: " + res.error + "\nResponse:\n" + res, 4, false)
@@ -2474,7 +2615,7 @@ export default {
 
 
                 //pers.isMounted = false
-                this.$store.dispatch('refreshMountedPersonalities');
+                this.getMountedPersonalities()
                 // Select some other personality
                 const lastPers = this.mountedPersArr[this.mountedPersArr.length - 1]
 
@@ -2492,6 +2633,35 @@ export default {
             }
 
             this.isLoading = false
+        },
+        getMountedPersonalities() {
+
+            let mountedPersArr = []
+            console.log(this.configFile.personalities.length)
+            // console.log('perrs listo',this.personalities)
+            for (let i = 0; i < this.configFile.personalities.length; i++) {
+                const full_path_item = this.configFile.personalities[i]
+                const index = this.personalities.findIndex(item => item.full_path == full_path_item)
+                console.log('index', index)
+                console.log("i:", i)
+                const pers = this.personalities[index]
+                if (pers) {
+                    mountedPersArr.push(pers)
+                }
+                else {
+                    mountedPersArr.push(this.personalities[this.personalities.findIndex(item => item.full_path == "english/generic/lollms")])
+                }
+            }
+            this.mountedPersArr = []
+            this.mountedPersArr = mountedPersArr
+            //this.mountedPersArr = mountedPersArr
+            console.log('getMountedPersonalities', mountedPersArr)
+            //console.log('fig', this.configFile.personality_category)
+            nextTick(() => {
+                //console.log('accc', this.$refs.mountedPersonalities)
+                //this.$store.state.mountedPersonalities = this.$refs.mountedPersonalities
+            })
+
         },
         onPersonalityReinstall(persItem){
             console.log('on reinstall ', persItem)
@@ -2536,6 +2706,7 @@ export default {
             } else {
                 //persItem.ismounted = true
                 this.mountPersonality(persItem)
+
             }
 
             //this.isLoading = false
@@ -2569,85 +2740,10 @@ export default {
         }
     },
     computed: {
-        configFile: {
-            get() {
-                return this.$store.state.config;
-            },
-            set(value) {
-                this.$store.commit('setConfig', value);
-            },
-        },
-
-        personalities:{
-            get() {
-                return this.$store.state.personalities;
-            },
-            set(value) {
-                this.$store.commit('setPersonalities', value);
-            }
-        },
-        mountedPersArr:{
-            get() {
-                return this.$store.state.mountedPersArr;
-            },
-            set(value) {
-                this.$store.commit('setMountedPers', value);
-            }
-        },
-        bindingsArr: {
-            get() {
-                return this.$store.state.bindingsArr;
-            },
-            set(value) {
-                this.$store.commit('setBindingsArr', value);
-            }
-        },
-        modelsArr: {
-            get() {
-                return this.$store.state.modelsArr;
-            },
-            set(value) {
-                this.$store.commit('setModelsArr', value);
-            }
-        },
-        models: {
-            get() {
-                return this.$store.state.models_zoo;
-            },
-            set(value) {
-                this.$store.commit('setModelsZoo', value);
-            }
-        },
-        diskUsage: {
-            get() {
-                return this.$store.state.diskUsage;
-            },
-            set(value) {
-                this.$store.commit('setDiskUsage', value);
-            }            
-        },
-        ramUsage: {
-            get() {
-                return this.$store.state.ramUsage;
-            },
-            set(value) {
-                this.$store.commit('setRamUsage', value);
-            }            
-        },
-        vramUsage: {
-            get() {
-                return this.$store.state.vramUsage;
-            },
-            set(value) {
-                this.$store.commit('setVramUsage', value);
-            }            
-        },
-
         disk_available_space() {
             return this.computedFileSize(this.diskUsage.available_space)
         },
         disk_binding_models_usage() {
-            console.log(`this.diskUsage : ${this.diskUsage}`)
             return this.computedFileSize(this.diskUsage.binding_models_usage)
         },
         disk_percent_usage() {
@@ -2707,12 +2803,6 @@ export default {
             catch (error) {
                 return defaultModelImgPlaceholder
             }
-        },
-        model_name() {
-            if (!this.isMounted) {
-                return
-            }
-            return this.configFile.model_name
         },
         binding_name() {
             if (!this.isMounted) {

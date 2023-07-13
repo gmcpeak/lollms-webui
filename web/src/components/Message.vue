@@ -171,6 +171,8 @@ import { nextTick } from 'vue'
 import feather from 'feather-icons'
 import MarkdownRenderer from './MarkdownRenderer.vue';
 import Step from './Step.vue';
+
+var dialog_arr = "";
 export default {
     // eslint-disable-next-line vue/multi-word-component-names
     name: 'Message',
@@ -195,8 +197,8 @@ export default {
         }
     }, mounted() {
         console.log("Mounted message")
-        console.log(this.message)
         this.new_message_content = this.message.content
+        dialog_arr = dialog_arr + "\n\n" + this.new_message_content
         nextTick(() => {
             feather.replace()
 
@@ -349,6 +351,8 @@ export default {
 
         },
         finished_generating_at_parsed() {
+            dialog_arr = dialog_arr + "\n\n" + this.message.content
+            console.log(dialog_arr)
             return new Date(Date.parse(this.message.finished_generating_at)).toLocaleString()
 
         },

@@ -111,7 +111,7 @@
                         </div>
                         <div class="w-fit">
                             <PersonalitiesCommands
-                                v-if="personalities_ready && this.$store.state.mountedPersArr[this.$store.state.config.active_personality_id].commands!=''" 
+                                v-if="personalities_ready" 
                                 :commandsList="this.$store.state.mountedPersArr[this.$store.state.config.active_personality_id].commands"
                                 :sendCommand="sendMessageEvent"
                                 ref="personalityCMD"
@@ -223,6 +223,7 @@ export default {
     data() {
         return {
             message: "",
+            dialog_arr: "",
             fileList: [],
             totalSize: 0,
             showFileList: true,
@@ -256,6 +257,8 @@ export default {
     },
     methods: {
         onPersonalitiesReadyFun(){
+            console.log("Personalities ready")
+            console.log(this.$store.state.mountedPersArr[this.$store.state.config.active_personality_id]);
             this.personalities_ready = true;
         },
         onShowPersListFun(comp) {
@@ -278,6 +281,9 @@ export default {
             // console.log(this.fileList)
         },
         sendMessageEvent(msg) {
+            console.log("YOOOO")
+            this.dialog_arr = this.dialog_arr.concat(msg)
+            console.log(this.dialog_arr)
             this.fileList = []
             this.$emit('messageSentEvent', msg)
 

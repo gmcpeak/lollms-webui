@@ -18,7 +18,7 @@ from lollms.types import MSG_TYPE
 from lollms.personality import AIPersonality, PersonalityBuilder
 from lollms.binding import LOLLMSConfig, BindingBuilder, LLMBinding, ModelBuilder
 from lollms.paths import LollmsPaths
-from lollms.helpers import ASCIIColors, trace_exception
+from lollms.helpers import ASCIIColors
 from lollms.app import LollmsApplication
 import multiprocessing as mp
 import threading
@@ -30,19 +30,6 @@ import sys
 from lollms.console import MainMenu
 import urllib
 import gc
-import ctypes
-from functools import partial
-
-def terminate_thread(thread):
-    if not thread.is_alive():
-        return
-
-    thread_id = thread.ident
-    exc = ctypes.py_object(SystemExit)
-    res = ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, exc)
-    if res > 1:
-        ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, None)
-        raise SystemError("Failed to terminate the thread.")
 
 __author__ = "parisneo"
 __github__ = "https://github.com/ParisNeo/lollms-webui"
@@ -109,7 +96,6 @@ class LoLLMsAPPI(LollmsApplication):
         super().__init__("Lollms_webui",config, lollms_paths)
         self.is_ready = True
         
-        
         self.socketio = socketio
         self.config_file_path = config_file_path
         self.cancel_gen = False
@@ -136,31 +122,17 @@ class LoLLMsAPPI(LollmsApplication):
 
         # This is used to keep track of messages 
         self.full_message_list = []
+        self.current_room_id = None
         self.download_infos={}
-        
-        self.connections = {}
-        
         # =========================================================================================
         # Socket IO stuff    
         # =========================================================================================
         @socketio.on('connect')
         def connect():
-            #Create a new connection information
-            self.connections[request.sid] = {
-                "current_discussion":None,
-                "generated_text":"",
-                "cancel_generation": False,          
-                "generation_thread": None
-            }     
             ASCIIColors.success(f'Client {request.sid} connected')
 
         @socketio.on('disconnect')
         def disconnect():
-            try:
-                del self.connections[request.sid]
-            except Exception as ex:
-                pass
-            
             ASCIIColors.error(f'Client {request.sid} disconnected')
 
         
@@ -174,12 +146,25 @@ class LoLLMsAPPI(LollmsApplication):
             self.socketio.emit('canceled', {
                                             'status': True
                                             },
-                                            room=request.sid 
+                                            room=self.current_room_id
                                 )            
             
         @socketio.on('install_model')
         def install_model(data):
-            room_id = request.sid            
+            room_id = request.sid 
+            
+            def get_file_size(url):
+                # Send a HEAD request to retrieve file metadata
+                response = urllib.request.urlopen(url)
+                
+                # Extract the Content-Length header value
+                file_size = response.headers.get('Content-Length')
+                
+                # Convert the file size to integer
+                if file_size:
+                    file_size = int(file_size)
+                
+                return file_size   
                      
             def install_model_():
                 print("Install model triggered")
@@ -197,7 +182,7 @@ class LoLLMsAPPI(LollmsApplication):
                 signature = f"{model_name}_{binding_folder}_{model_url}"
                 self.download_infos[signature]={
                     "start_time":datetime.now(),
-                    "total_size":self.binding.get_file_size(model_path),
+                    "total_size":get_file_size(model_path),
                     "downloaded_size":0,
                     "progress":0,
                     "speed":0,
@@ -374,21 +359,13 @@ class LoLLMsAPPI(LollmsApplication):
             
         @socketio.on('cancel_generation')
         def cancel_generation():
-            client_id = request.sid
             self.cancel_gen = True
-            #kill thread
-            ASCIIColors.error(f'Client {request.sid} requested cancelling generation')
-            terminate_thread(self.connections[client_id]['generation_thread'])
             ASCIIColors.error(f'Client {request.sid} canceled generation')
-            self.cancel_gen = False
 
         
         @socketio.on('generate_msg')
         def generate_msg(data):
-            client_id = request.sid
-            self.connections[client_id]["generated_text"]=""
-            self.connections[client_id]["cancel_generation"]=False
-
+            self.current_room_id = request.sid
             if self.is_ready:
                 if self.current_discussion is None:
                     if self.db.does_last_discussion_have_messages():
@@ -406,17 +383,16 @@ class LoLLMsAPPI(LollmsApplication):
 
                 self.current_user_message_id = message_id
                 ASCIIColors.green("Starting message generation by"+self.personality.name)
-                self.connections[client_id]['generation_thread'] = threading.Thread(target=self.start_message_generation, args=(message, message_id, client_id))
-                self.connections[client_id]['generation_thread'].start()
-                
+
+                task = self.socketio.start_background_task(self.start_message_generation, message, message_id)
                 self.socketio.sleep(0.01)
                 ASCIIColors.info("Started generation task")
-                #tpe = threading.Thread(target=self.start_message_generation, args=(message, message_id, client_id))
+                #tpe = threading.Thread(target=self.start_message_generation, args=(message, message_id))
                 #tpe.start()
             else:
-                self.socketio.emit("buzzy", {"message":"I am buzzy. Come back later."}, room=client_id)
+                self.socketio.emit("buzzy", {"message":"I am buzzy. Come back later."}, room=self.current_room_id)
                 self.socketio.sleep(0.01)
-                ASCIIColors.warning(f"OOps request {client_id}  refused!! Server buzy")
+                ASCIIColors.warning(f"OOps request {self.current_room_id}  refused!! Server buzy")
                 self.socketio.emit('infos',
                         {
                             "status":'model_not_ready',
@@ -433,19 +409,17 @@ class LoLLMsAPPI(LollmsApplication):
                             'personality': self.current_discussion.current_message_personality,
                             'created_at': self.current_discussion.current_message_created_at,
                             'finished_generating_at': self.current_discussion.current_message_finished_generating_at,
-                        }, room=client_id
+                        }, room=self.current_room_id
                 )
                 self.socketio.sleep(0.01)
 
         @socketio.on('generate_msg_from')
         def handle_connection(data):
-            client_id = request.sid
             message_id = int(data['id'])
             message = data["prompt"]
             self.current_user_message_id = message_id
-            self.connections[client_id]['generation_thread'] = threading.Thread(target=self.start_message_generation, args=(message, message_id, client_id))
-            self.connections[client_id]['generation_thread'].start()
-
+            tpe = threading.Thread(target=self.start_message_generation, args=(message, message_id))
+            tpe.start()
         # generation status
         self.generating=False
         ASCIIColors.blue(f"Your personal data is stored here :",end="")
@@ -454,13 +428,11 @@ class LoLLMsAPPI(LollmsApplication):
 
         @socketio.on('continue_generate_msg_from')
         def handle_connection(data):
-            client_id = request.sid
             message_id = int(data['id'])
             message = data["prompt"]
             self.current_user_message_id = message_id
-            self.connections[client_id]['generation_thread'] = threading.Thread(target=self.start_message_generation, args=(message, message_id, client_id))
-            self.connections[client_id]['generation_thread'].start()
-
+            tpe = threading.Thread(target=self.start_message_generation, args=(message, message_id))
+            tpe.start()
         # generation status
         self.generating=False
         ASCIIColors.blue(f"Your personal data is stored here :",end="")
@@ -506,9 +478,8 @@ class LoLLMsAPPI(LollmsApplication):
                                                     run_scripts=True,
                                                     installation_option=InstallOption.FORCE_INSTALL)
                         mounted_personalities.append(personality)
-                    except Exception as ex:
+                    except:
                         ASCIIColors.error(f"Couldn't load personality at {personality_path}")
-                        trace_exception(ex)
                         ASCIIColors.info(f"Unmounting personality")
                         to_remove.append(i)
                         personality = AIPersonality(None,                                                    self.lollms_paths, 
@@ -635,7 +606,7 @@ class LoLLMsAPPI(LollmsApplication):
         self.full_message_list = []
         for message in messages:
             if message["id"]< message_id or message_id==-1: 
-                if message["type"]<=MSG_TYPE.MSG_TYPE_FULL_INVISIBLE_TO_USER.value and message["type"]!=MSG_TYPE.MSG_TYPE_FULL_INVISIBLE_TO_AI.value:
+                if message["type"]==MSG_TYPE.MSG_TYPE_FULL:
                     if message["sender"]==self.personality.name:
                         self.full_message_list.append(self.personality.ai_message_prefix+message["content"])
                     else:
@@ -650,18 +621,10 @@ class LoLLMsAPPI(LollmsApplication):
             self.full_message_list.append(self.personality.ai_message_prefix+message["content"])
 
 
-        messages = link_text.join(self.full_message_list)
-        t = self.model.tokenize(messages)
-        n_t = len(t)
-        max_prompt_stx_size = 3*int(self.config.ctx_size/4)
-        if self.n_cond_tk+n_t>max_prompt_stx_size:
-            nb_tk = max_prompt_stx_size-self.n_cond_tk
-            messages = self.model.detokenize(t[-nb_tk:])
-            ASCIIColors.warning(f"Cropping discussion to fit context [using {nb_tk} tokens/{self.config.ctx_size}]")
-        discussion_messages = self.personality.personality_conditioning+ messages
-        tokens = self.model.tokenize(discussion_messages)
+        discussion_messages = self.personality.personality_conditioning+ link_text.join(self.full_message_list)
+
         
-        return discussion_messages, message["content"], tokens
+        return discussion_messages, message["content"]
 
     def get_discussion_to(self, message_id=-1):
         messages = self.current_discussion.get_messages()
@@ -701,13 +664,12 @@ class LoLLMsAPPI(LollmsApplication):
 
         return string
     
-    def process_chunk(self, chunk, message_type:MSG_TYPE, client_id):
+    def process_chunk(self, chunk, message_type:MSG_TYPE):
         """
         0 : a regular message
         1 : a notification message
         2 : A hidden message
         """
-
         if message_type == MSG_TYPE.MSG_TYPE_STEP:
             ASCIIColors.info("--> Step:"+chunk)
         if message_type == MSG_TYPE.MSG_TYPE_STEP_START:
@@ -717,7 +679,6 @@ class LoLLMsAPPI(LollmsApplication):
         if message_type == MSG_TYPE.MSG_TYPE_EXCEPTION:
             ASCIIColors.error("--> Exception from personality:"+chunk)
         
-
         if message_type == MSG_TYPE.MSG_TYPE_CHUNK:
             self.current_generated_text += chunk
             self.nb_received_tokens += 1
@@ -738,7 +699,7 @@ class LoLLMsAPPI(LollmsApplication):
                                                     'ai_message_id':self.current_ai_message_id, 
                                                     'discussion_id':self.current_discussion.discussion_id,
                                                     'message_type': MSG_TYPE.MSG_TYPE_FULL.value
-                                                }, room=client_id
+                                                }, room=self.current_room_id
                                         )
                     self.socketio.sleep(0.01)
                     self.current_discussion.update_message(self.current_ai_message_id, self.current_generated_text)
@@ -765,7 +726,7 @@ class LoLLMsAPPI(LollmsApplication):
                                             'ai_message_id':self.current_ai_message_id, 
                                             'discussion_id':self.current_discussion.discussion_id,
                                             'message_type': message_type.value
-                                        }, room=client_id
+                                        }, room=self.current_room_id
                                 )
             self.socketio.sleep(0.01)
             return True
@@ -777,7 +738,7 @@ class LoLLMsAPPI(LollmsApplication):
                                             'ai_message_id':self.current_ai_message_id, 
                                             'discussion_id':self.current_discussion.discussion_id,
                                             'message_type': message_type.value
-                                        }, room=client_id
+                                        }, room=self.current_room_id
                                 )
             self.socketio.sleep(0.01)
 
@@ -788,9 +749,8 @@ class LoLLMsAPPI(LollmsApplication):
         if self.personality.processor is not None:
             ASCIIColors.success("Running workflow")
             try:
-                output = self.personality.processor.run_workflow( prompt, full_prompt, callback)
-                if callback:
-                    callback(output, MSG_TYPE.MSG_TYPE_FULL)
+                output = self.personality.processor.run_workflow( prompt, full_prompt, self.process_chunk)
+                self.process_chunk(output, MSG_TYPE.MSG_TYPE_FULL)
             except Exception as ex:
                 # Catch the exception and get the traceback as a list of strings
                 traceback_lines = traceback.format_exception(type(ex), ex, ex.__traceback__)
@@ -798,19 +758,18 @@ class LoLLMsAPPI(LollmsApplication):
                 traceback_text = ''.join(traceback_lines)
                 ASCIIColors.error(f"Workflow run failed.\nError:{ex}")
                 ASCIIColors.error(traceback_text)
-                if callback:
-                    callback(f"Workflow run failed\nError:{ex}", MSG_TYPE.MSG_TYPE_EXCEPTION)                   
+                self.process_chunk(f"Workflow run failed\nError:{ex}", MSG_TYPE.MSG_TYPE_EXCEPTION)                   
             print("Finished executing the workflow")
             return
 
         self._generate(full_prompt, n_predict, callback)
-        ASCIIColors.success("\nFinished executing the generation")
+        print("Finished executing the generation")
 
     def _generate(self, prompt, n_predict=1024, callback=None):
         self.current_generated_text = ""
         self.nb_received_tokens = 0
         if self.model is not None:
-            ASCIIColors.info(f"warmup for generating {n_predict} tokens")
+            ASCIIColors.info("warmup")
             if self.config["override_personality_model_parameters"]:
                 output = self.model.generate(
                     prompt,
@@ -845,8 +804,8 @@ class LoLLMsAPPI(LollmsApplication):
             output = ""
         return output
                      
-    def start_message_generation(self, message, message_id, client_id, is_continue=False):
-        ASCIIColors.info(f"Text generation requested by client: {client_id}")
+    def start_message_generation(self, message, message_id, is_continue=False):
+        ASCIIColors.info(f"Text generation requested by client: {self.current_room_id}")
         # send the message to the bot
         print(f"Received message : {message}")
         if self.current_discussion:
@@ -878,21 +837,15 @@ class LoLLMsAPPI(LollmsApplication):
                             'personality': self.current_discussion.current_message_personality,
                             'created_at': self.current_discussion.current_message_created_at,
                             'finished_generating_at': self.current_discussion.current_message_finished_generating_at,                        
-                        }, room=client_id
+                        }, room=self.current_room_id
             )
             self.socketio.sleep(0.01)
 
             # prepare query and reception
-            self.discussion_messages, self.current_message, tokens = self.prepare_query(message_id, is_continue)
+            self.discussion_messages, self.current_message = self.prepare_query(message_id, is_continue)
             self.prepare_reception()
             self.generating = True
-            self.generate(
-                            self.discussion_messages, 
-                            self.current_message, 
-                            n_predict = self.config.ctx_size-len(tokens)-1, 
-                            callback=partial(self.process_chunk,client_id = client_id)
-                            
-                        )
+            self.generate(self.discussion_messages, self.current_message, n_predict = self.config['n_predict'], callback=self.process_chunk)
             print()
             print("## Done Generation ##")
             print()
@@ -921,7 +874,7 @@ class LoLLMsAPPI(LollmsApplication):
                                             'created_at': self.current_discussion.current_message_created_at,
                                             'finished_generating_at': self.current_discussion.current_message_finished_generating_at,
 
-                                        }, room=client_id
+                                        }, room=self.current_room_id
                                 )
             self.socketio.sleep(0.01)
 
@@ -938,7 +891,7 @@ class LoLLMsAPPI(LollmsApplication):
                                             'ai_message_id':self.current_ai_message_id, 
                                             'discussion_id':0,
                                             'message_type': MSG_TYPE.MSG_TYPE_EXCEPTION.value
-                                        }, room=client_id
+                                        }, room=self.current_room_id
                                 )            
             print()
             return ""
