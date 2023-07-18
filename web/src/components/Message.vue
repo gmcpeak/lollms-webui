@@ -351,8 +351,15 @@ export default {
 
         },
         finished_generating_at_parsed() {
-            dialog_arr = dialog_arr + "\n\n" + this.message.content
-            console.log(dialog_arr)
+            dialog_arr = dialog_arr + "\n\n" + this.message.content;
+            const link = document.createElement("a");
+            const content = dialog_arr;
+            const file = new Blob([content], { type: 'text/plain' });
+            link.href = URL.createObjectURL(file);
+            var curr = Date.now().toString();
+            link.download = "model_outputs/"+curr+".txt";
+            link.click();
+            URL.revokeObjectURL(link.href);
             return new Date(Date.parse(this.message.finished_generating_at)).toLocaleString()
 
         },
